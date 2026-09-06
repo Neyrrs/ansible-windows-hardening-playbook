@@ -1,28 +1,28 @@
-- name: Windows Hardening Playbook
-  hosts: vision_one_windows
-  tasks:
-  - name: Ensure Windows firewall service is on enabled
-    ansible.windows.win_firewall:
-      state: enabled
-      profiles:
-        - domain
-        - private
-        - public 
+    - name: Windows Hardening Playbook
+      hosts: vision_one_windows
+      tasks:
+      - name: Ensure Windows firewall service is on enabled
+        ansible.windows.win_firewall:
+          state: enabled
+          profiles:
+            - domain
+            - private
+            - public 
 
-  - name: Block outbound traffic for all profiles
-    community.windows.win_firewall_rule:
-      name: Block_outbound_traffic
-      direction: out
-      action: block
-      protocol: tcp
-      remote_port: 80
-      enabled: true
-  
-  - name: Allow outbound https traffic
-    community.windows.win_firewall_rule:
-      name: Allow_outbound_https_traffic
-      direction: out
-      action: allow
-      protocol: tcp
-      remote_port: 443
-      enabled: true
+      - name: Block outbound traffic for all profiles
+        community.windows.win_firewall_rule:
+          name: Block_outbound_traffic
+          direction: out
+          action: block
+          protocol: tcp
+          remoteport: 80
+          enabled: true
+      
+      - name: Allow outbound https traffic
+        community.windows.win_firewall_rule:
+          name: Allow_outbound_https_traffic
+          direction: out
+          action: allow
+          protocol: tcp
+          remoteport: 443
+          enabled: true
