@@ -1,5 +1,5 @@
     - name: Windows Hardening Playbook
-      hosts: vision_one_windows
+      hosts: apex_one_windows
       tasks:
       - name: Ensure Windows firewall service is on enabled
         ansible.windows.win_firewall:
