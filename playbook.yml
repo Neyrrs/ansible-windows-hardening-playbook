@@ -1,28 +1,64 @@
-    - name: Windows Hardening Playbook
-      hosts: apex_one_windows
-      tasks:
-      - name: Ensure Windows firewall service is on enabled
-        ansible.windows.win_firewall:
-          state: enabled
-          profiles:
-            - domain
-            - private
-            - public 
+---
+- name: Harden Windows endpoints
+  hosts: apex_one_windows
+  gather_facts: true
+  serial: 10
+  vars:
+    windows_firewall_profiles:
+      - Domain
+      - Private
+      - Public
+    windows_firewall_block_ports:
+      - 80
+      - 8080
+    windows_firewall_allow_ports:
+      - 443
+      - 53
 
-      - name: Block outbound traffic for all profiles
-        community.windows.win_firewall_rule:
-          name: Block_outbound_traffic
-          direction: out
-          action: block
-          protocol: tcp
-          remoteport: 80
-          enabled: true
-      
-      - name: Allow outbound https traffic
-        community.windows.win_firewall_rule:
-          name: Allow_outbound_https_traffic
-          direction: out
-          action: allow
-          protocol: tcp
-          remoteport: 443
-          enabled: true
+  tasks:
+    - name: Ensure Windows Firewall service is enabled and running
+      ansible.windows.win_service:
+        name: MpsSvc
+        state: started
+        start_mode: auto
+      tags: [firewall, hardening]
+
+    - name: Ensure firewall is enabled for all profiles
+      ansible.windows.win_firewall:
+        state: enabled
+        profiles: "{{ windows_firewall_profiles }}"
+      tags: [firewall, hardening]
+
+    - name: Create explicit outbound block rule for HTTP traffic
+      community.windows.win_firewall_rule:
+        name: Block_HTTP_Outbound
+        description: Block outbound HTTP traffic by default
+        state: present
+        enabled: true
+        direction: out
+        action: block
+        protocol: tcp
+        remoteport: "{{ item }}"
+        profiles: "{{ windows_firewall_profiles }}"
+      loop: "{{ windows_firewall_block_ports }}"
+      tags: [firewall, hardening, network]
+
+    - name: Create explicit outbound allow rule for HTTPS traffic
+      community.windows.win_firewall_rule:
+        name: Allow_HTTPS_Outbound
+        description: Allow outbound HTTPS traffic
+        state: present
+        enabled: true
+        direction: out
+        action: allow
+        protocol: tcp
+        remoteport: "{{ item }}"
+        profiles: "{{ windows_firewall_profiles }}"
+      loop: "{{ windows_firewall_allow_ports }}"
+      tags: [firewall, hardening, network]
+
+    - name: Re-assert firewall state after rule creation
+      ansible.windows.win_firewall:
+        state: enabled
+        profiles: "{{ windows_firewall_profiles }}"
+      tags: [firewall, hardening]
